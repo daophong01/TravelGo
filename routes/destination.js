@@ -1,36 +1,55 @@
 // routes/destination.js
 const express = require('express');
+const prisma = require('../lib/prisma');
+const { authRequired, isAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // GET /api/destination
-router.get('/', (req, res) => {
-  res.json([{ id: 1, name: 'Bali', slug: 'bali' }, { id: 2, name: 'Phu Quoc', slug: 'phu-quoc' }]);
+router.get('/', async (req, res) => {
+  const items = await prisma.destination.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: { category: true },
+  });
+  res.json(items);
 });
 
 // GET /api/destination/featured
-router.get('/featured', (req, res) => {
-  res.json([{ id: 1, name: 'Bali', slug: 'bali', featured: true }]);
+router.get('/featured', async (req, res) => {
+  const items = await prisma.destination.findMany({
+    where: { featured: true },
+    orderBy: { createdAt: 'desc' },
+    take: 6,
+  });
+  res.json(items);
 });
 
 // GET /api/destination/:slug
-router.get('/:slug', (req, res) => {
+router.get('/:slug', async (req, res) => {
   const { slug } = req.params;
-  res.json({ id: 1, slug, name: slug.replace('-', ' ').toUpperCase(), description: 'Mock destination detail' });
+  const dest = await prisma.destination.findUnique({ where: { slug } });
+  if (!dest) return res.status(404).json({ message: 'Destination not found' });
+  res.json(dest);
 });
 
-// CRUD (admin usage typically)
-// POST /api/destination
-router.post('/', (req, res) => {
-  res.status(201).json({ message: 'Destination created', data: req.body });
+// Admin CRUD
+router.post('/', authRequired, isAdmin, async (req, res) => {
+  const { name, slug, description, featured = false, categoryId = null } = req.body || {};
+  if (!name || !slug) return res.status(400).json({ message: 'Missing fields' });
+  const created = await prisma.destination.create({
+    data: { name, slug, description, featured, categoryId },
+  });
+  res.status(201).json(created);
 });
 
-// PUT /api/destination/:id
-router.put('/:id', (req, res) => {
-  res.json({ message: 'Destination updated', id: req.params.id, data: req.body });
+router.put('/:id', authRequired, isAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const updated = await prisma.destination.update({ where: { id }, data: req.body || {} });
+  res.json(updated);
 });
 
-// DELETE /api/destination/:id
-router.delete('/:id', (req, res) => {
+router.delete('/:id', authRequired, isAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  await prisma.destination.delete({ where: { id } });
   res.status(204).send();
 });
 

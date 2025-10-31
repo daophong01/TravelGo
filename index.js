@@ -1,8 +1,14 @@
 const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+
+const { authRequired, isAdmin } = require('./middleware/auth');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middlewares
+app.use(cors());
 app.use(express.json());
 
 // Basic health route
@@ -29,7 +35,8 @@ app.use('/api/booking', bookingRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/review', reviewRoutes);
 app.use('/api/notification', notificationRoutes);
-app.use('/api/admin', adminRoutes);
+// Protect all admin endpoints
+app.use('/api/admin', authRequired, isAdmin, adminRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/category', categoryRoutes);
 
