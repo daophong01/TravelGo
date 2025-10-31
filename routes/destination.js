@@ -5,8 +5,8 @@ const { authRequired, isAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // GET /api/destination
-// Supports pagination, multi-category filter, price range, search and sort
-// ?page=1&pageSize=10&categoryId=1&categoryIds=1,2&q=beach&minPrice=0&maxPrice=10000000&sort=name_asc|name_desc|created_desc|created_asc|featured_first
+// Supports pagination, multi-category filter, price range, search, featured filter and sort
+// ?page=1&pageSize=10&categoryId=1&categoryIds=1,2&q=beach&minPrice=0&maxPrice=10000000&featured=true|false&sort=name_asc|name_desc|created_desc|created_asc|featured_first
 router.get('/', async (req, res) => {
   const page = Number(req.query.page || 0);
   const pageSize = Number(req.query.pageSize || 0);
@@ -16,6 +16,9 @@ router.get('/', async (req, res) => {
     : undefined;
   const minPrice = req.query.minPrice ? Number(req.query.minPrice) : undefined;
   const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : undefined;
+  const featured = typeof req.query.featured !== 'undefined'
+    ? (req.query.featured === 'true' ? true : req.query.featured === 'false' ? false : undefined)
+    : undefined;
   const q = (req.query.q || '').toString().trim();
   const sort = (req.query.sort || 'created_desc').toString();
 
@@ -24,6 +27,7 @@ router.get('/', async (req, res) => {
     ...(categoryIds && categoryIds.length ? { categoryId: { in: categoryIds } } : {}),
     ...(typeof minPrice === 'number' ? { price: { gte: minPrice } } : {}),
     ...(typeof maxPrice === 'number' ? { price: { lte: maxPrice } } : {}),
+    ...(typeof featured === 'boolean' ? { featured } : {}),
     ...(q ? { OR: [{ name: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] } : {}),
   };
 

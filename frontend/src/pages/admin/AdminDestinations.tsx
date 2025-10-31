@@ -8,12 +8,15 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { exportDestinationsCSV } from '../../services/admin';
+import { getCategories } from '../../services/category';
 
 const schema = z.object({
   name: z.string().min(2, 'Name is required'),
   slug: z.string().min(2, 'Slug is required'),
   description: z.string().optional(),
   featured: z.boolean().optional(),
+  price: z.coerce.number().int().nonnegative().optional(),
+  categoryId: z.coerce.number().int().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -24,9 +27,28 @@ export default function AdminDestinations() {
   const [selected, setSelected] = useState<number[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
+  // filters
+  const [q, setQ] = useState('');
+  const [featured, setFeatured] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [cats, setCats] = useState<Array<{ id: number; name: string }>>([]);
+
+  useMemo(() => {
+    getCategories().then(setCats).catch(() => setCats([]));
+  }, []);
+
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['admin', 'destinations', page, pageSize],
-    queryFn: () => getDestinationsPaged(page, pageSize),
+    queryKey: ['admin', 'destinations', page, pageSize, q, featured, categoryId, minPrice, maxPrice],
+    queryFn: () => getDestinationsPaged(page, pageSize, {
+      q: q || undefined,
+      sort: 'featured_first',
+      categoryId: categoryId || undefined,
+      minPrice: minPrice ? Number(minPrice) : undefined,
+      maxPrice: maxPrice ? Number(maxPrice) : undefined,
+      ...(featured ? { featured: featured === 'true' } as any : {}),
+    }),
     keepPreviousData: true,
   });
 
@@ -35,7 +57,7 @@ export default function AdminDestinations() {
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { name: '', slug: '', description: '', featured: false },
+    defaultValues: { name: '', slug: '', description: '', featured: false, price: 0, categoryId: undefined },
   });
 
   async function onCreate(values: FormData) {
@@ -89,7 +111,13 @@ export default function AdminDestinations() {
 
   async function onExport() {
     try {
-      const blob = await exportDestinationsCSV({});
+      const blob = await exportDestinationsCSV({
+        q: q || undefined,
+        categoryId: categoryId ? Number(categoryId) : undefined,
+        minPrice: minPrice ? Number(minPrice) : undefined,
+        maxPrice: maxPrice ? Number(maxPrice) : undefined,
+        featured: featured ? featured === 'true' : undefined,
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -111,7 +139,6 @@ export default function AdminDestinations() {
     if (!data) return;
     const pageIds = data.items.map((d: any) => d.id);
     if (selectAll) {
-      // unselect all page ids
       setSelected((prev) => prev.filter((id) => !pageIds.includes(id)));
       setSelectAll(false);
     } else {
@@ -136,8 +163,25 @@ export default function AdminDestinations() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onCreate)} className="grid md:grid-cols-4 gap-3 items-end">
-        <div>
+      <div className="grid md:grid-cols-5 gap-3">
+        <input className="border rounded px-3 py-2 md:col-span-2" placeholder="Search..." value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} />
+        <select className="border rounded px-3 py-2" value={categoryId} onChange={(e) => { setPage(1); setCategoryId(e.target.value); }}>
+          <option value="">All categories</option>
+          {cats.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
+        </select>
+        <select className="border rounded px-3 py-2" value={featured} onChange={(e) => { setPage(1); setFeatured(e.target.value); }}>
+          <option value="">All</option>
+          <option value="true">Featured</option>
+          <option value="false">Not featured</option>
+        </select>
+        <div className="grid grid-cols-2 gap-2">
+          <input className="border rounded px-3 py-2" placeholder="Min price" value={minPrice} onChange={(e) => { setPage(1); setMinPrice(e.target.value); }} />
+          <input className="border rounded px-3 py-2" placeholder="Max price" value={maxPrice} onChange={(e) => { setPage(1); setMaxPrice(e.target.value); }} />
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit(onCreate)} className="grid md:grid-cols-6 gap-3 items-end">
+        <div className="md:col-span-2">
           <label className="block text-xs text-gray-500 mb-1">Name</label>
           <input className="border rounded px-3 py-2 w-full" {...register('name')} />
           {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name.message}</p>}
@@ -146,6 +190,17 @@ export default function AdminDestinations() {
           <label className="block text-xs text-gray-500 mb-1">Slug</label>
           <input className="border rounded px-3 py-2 w-full" {...register('slug')} />
           {errors.slug && <p className="text-xs text-red-600 mt-1">{errors.slug.message}</p>}
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Price</label>
+          <input className="border rounded px-3 py-2 w-full" type="number" {...register('price')} />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Category</label>
+          <select className="border rounded px-3 py-2 w-full" {...register('categoryId')}>
+            <option value="">None</option>
+            {cats.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
+          </select>
         </div>
         <div>
           <label className="block text-xs text-gray-500 mb-1">Description</label>
@@ -176,12 +231,12 @@ export default function AdminDestinations() {
 
       {!isLoading && data && data.items.length > 0 && (
         <>
-          <Table headers={['', 'ID', 'Name', 'Slug', 'Featured', 'Actions']}>
+          <Table headers={['', 'ID', 'Name', 'Slug', 'Price', 'Featured', 'Actions']}>
             <tr className="border-t">
               <td className="px-3 py-2">
                 <input type="checkbox" checked={selectAll} onChange={toggleSelectAllOnPage} />
               </td>
-              <td className="px-3 py-2" colSpan={5}>
+              <td className="px-3 py-2" colSpan={6}>
                 <span className="text-xs text-gray-500">Select all on page</span>
               </td>
             </tr>
@@ -200,6 +255,9 @@ export default function AdminDestinations() {
                 </td>
                 <td className="px-3 py-2">
                   <InlineEdit value={d.slug} onSave={(v) => onUpdate(d.id, { slug: v })} />
+                </td>
+                <td className="px-3 py-2">
+                  <InlineEdit value={String(d.price ?? 0)} onSave={(v) => onUpdate(d.id, { price: Number(v) || 0 } as any)} />
                 </td>
                 <td className="px-3 py-2">
                   <input
