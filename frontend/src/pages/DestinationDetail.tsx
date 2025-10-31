@@ -35,6 +35,8 @@ export default function DestinationDetail() {
     };
   }, [slug]);
 
+  const hasCoords = dest && typeof dest.lat === 'number' && typeof dest.lng === 'number' && (dest.lat !== 0 || dest.lng !== 0);
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       {loading && <Skeleton className="h-24" />}
@@ -47,6 +49,24 @@ export default function DestinationDetail() {
               Giá: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(dest.price)}
             </div>
           ) : null}
+
+          {hasCoords && (
+            <div className="border rounded p-4 mb-6">
+              <div className="text-sm text-gray-500 mb-2">Bản đồ</div>
+              <div className="aspect-video w-full rounded overflow-hidden border">
+                <iframe
+                  title="map"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps?q=${dest.lat},${dest.lng}&z=12&output=embed`}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="border rounded p-4 mb-6">
             <div className="text-sm text-gray-500 mb-2">Thư viện ảnh</div>
             {images.length === 0 && <div className="text-xs text-gray-500">Chưa có ảnh.</div>}
@@ -58,6 +78,7 @@ export default function DestinationDetail() {
               </div>
             )}
           </div>
+
           <div>
             <h2 className="text-lg font-semibold mb-2">Đánh giá</h2>
             {reviews.length === 0 && (
