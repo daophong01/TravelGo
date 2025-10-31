@@ -13,11 +13,11 @@ export default function Loyalty() {
 
   return (
     <div className="space-y-3">
-      <h2 className="text-xl font-semibold">Loyalty Points</h2>
+      <h2 className="text-xl font-semibold">Điểm thưởng</h2>
       {isLoading && <Skeleton className="h-16" />}
       {!isLoading && (
         <div className="border rounded p-4">
-          <div className="text-sm text-gray-500">Your points</div>
+          <div className="text-sm text-gray-500">Điểm của bạn</div>
           <div className="text-2xl font-semibold">{data?.points ?? 0}</div>
         </div>
       )}

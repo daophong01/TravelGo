@@ -14,7 +14,7 @@ export default function Notifications() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Notifications</h2>
+      <h2 className="text-xl font-semibold">Thông báo</h2>
 
       {isLoading && (
         <div className="space-y-2">
@@ -23,18 +23,18 @@ export default function Notifications() {
       )}
 
       {!isLoading && (!data || data.length === 0) && (
-        <div className="text-sm text-gray-500">No notifications.</div>
+        <div className="text-sm text-gray-500">Chưa có thông báo.</div>
       )}
 
       {!isLoading && data && data.length > 0 && (
-        <Table headers={['ID', 'Type', 'Message', 'Created At', 'Read']}>
+        <Table headers={['Mã', 'Loại', 'Nội dung', 'Thời gian', 'Đã đọc']}>
           {data.map((n) => (
             <tr key={n.id} className="border-t">
               <td className="px-3 py-2">{n.id}</td>
               <td className="px-3 py-2">{n.type}</td>
               <td className="px-3 py-2">{n.message}</td>
               <td className="px-3 py-2">{new Date(n.createdAt).toLocaleString()}</td>
-              <td className="px-3 py-2">{n.read ? 'Yes' : 'No'}</td>
+              <td className="px-3 py-2">{n.read ? 'Có' : 'Không'}</td>
             </tr>
           ))}
         </Table>

@@ -6,7 +6,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Dashboard</h2>
+      <h2 className="text-xl font-semibold">Tổng quan</h2>
       {isLoading && (
         <div className="grid md:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -16,10 +16,10 @@ export default function AdminDashboard() {
       )}
       {!isLoading && data && (
         <div className="grid md:grid-cols-4 gap-4">
-          <Card title="Revenue" value={formatCurrency(data.revenue)} />
-          <Card title="Bookings" value={data.totalBookings} />
-          <Card title="Users" value={data.totalUsers} />
-          <Card title="Destinations" value={data.totalDestinations} />
+          <Card title="Doanh thu" value={formatCurrency(data.revenue)} />
+          <Card title="Đơn đặt" value={data.totalBookings} />
+          <Card title="Người dùng" value={data.totalUsers} />
+          <Card title="Điểm đến" value={data.totalDestinations} />
         </div>
       )}
     </div>

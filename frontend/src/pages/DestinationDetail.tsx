@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import Skeleton from '../components/Skeleton';
-import { getDestinationBySlug } from '../services/destination';
+import { getDestinationBySlug, getDestinationImages } from '../services/destination';
 import { getReviewsByDestination } from '../services/review';
 
 export default function DestinationDetail() {
@@ -9,6 +9,7 @@ export default function DestinationDetail() {
   const [loading, setLoading] = useState(true);
   const [dest, setDest] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [images, setImages] = useState<Array<{ id: number; url: string }>>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -18,9 +19,13 @@ export default function DestinationDetail() {
         const d = await getDestinationBySlug(slug || '');
         if (!mounted) return;
         setDest(d);
-        const r = await getReviewsByDestination(d.id);
+        const [r, imgs] = await Promise.all([
+          getReviewsByDestination(d.id),
+          getDestinationImages(d.id),
+        ]);
         if (!mounted) return;
         setReviews(r);
+        setImages(imgs);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -43,15 +48,18 @@ export default function DestinationDetail() {
             </div>
           ) : null}
           <div className="border rounded p-4 mb-6">
-            <div className="text-sm text-gray-500 mb-2">Gallery (placeholder)</div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="bg-gray-200 h-24 rounded" />
-              <div className="bg-gray-200 h-24 rounded" />
-              <div className="bg-gray-200 h-24 rounded" />
-            </div>
+            <div className="text-sm text-gray-500 mb-2">Thư viện ảnh</div>
+            {images.length === 0 && <div className="text-xs text-gray-500">Chưa có ảnh.</div>}
+            {images.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {images.map((img) => (
+                  <img key={img.id} src={img.url} alt="" className="h-24 w-full object-cover rounded border" />
+                ))}
+              </div>
+            )}
           </div>
           <div>
-            <h2 className="text-lg font-semibold mb-2">Reviews</h2>
+            <h2 className="text-lg font-semibold mb-2">Đánh giá</h2>
             {reviews.length === 0 && (
               <div className="text-sm text-gray-500">Chưa có đánh giá.</div>
             )}
@@ -59,7 +67,7 @@ export default function DestinationDetail() {
               <ul className="space-y-3">
                 {reviews.map((r) => (
                   <li key={r.id} className="border rounded p-3">
-                    <div className="text-sm font-medium">Rating: {r.rating}/5</div>
+                    <div className="text-sm font-medium">Điểm: {r.rating}/5</div>
                     {r.comment ? <div className="text-sm mt-1">{r.comment}</div> : null}
                     <div className="text-xs text-gray-500 mt-1">{r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</div>
                   </li>

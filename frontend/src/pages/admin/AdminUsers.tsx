@@ -7,7 +7,7 @@ export default function AdminUsers() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Users</h2>
+      <h2 className="text-xl font-semibold">Người dùng</h2>
 
       {isLoading && (
         <div className="space-y-2">
@@ -18,7 +18,7 @@ export default function AdminUsers() {
       )}
 
       {!isLoading && data && (
-        <Table headers={['ID', 'Email', 'Name', 'Role']}>
+        <Table headers={['Mã', 'Email', 'Họ tên', 'Quyền']}>
           {data.map((u) => (
             <tr key={u.id} className="border-t">
               <td className="px-3 py-2">{u.id}</td>

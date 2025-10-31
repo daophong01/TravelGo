@@ -14,7 +14,7 @@ export default function Destinations() {
   const categoryIds = params.getAll('categoryIds'); // multi
   const minPrice = params.get('minPrice') || '';
   const maxPrice = params.get('maxPrice') || '';
-  const sort = params.get('sort') || 'created_desc';
+  const sort = params.get('sort') || 'featured_first';
 
   const [data, setData] = useState<{ items: any[]; total: number } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -61,10 +61,19 @@ export default function Destinations() {
     setFilter({ categoryIds: Array.from(current) });
   }
 
+  function setPreset(min?: number, max?: number) {
+    const next: Record<string, string> = {};
+    if (typeof min !== 'undefined') next.minPrice = String(min);
+    if (typeof max !== 'undefined') next.maxPrice = String(max);
+    if (typeof min === 'undefined') next.minPrice = '';
+    if (typeof max === 'undefined') next.maxPrice = '';
+    setFilter(next);
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold mb-4">Destinations</h1>
+        <h1 className="text-2xl font-semibold mb-4">Điểm đến</h1>
         <Pagination
           page={page}
           pageCount={pageCount}
@@ -75,7 +84,7 @@ export default function Destinations() {
       <div className="grid md:grid-cols-4 gap-3 mb-4">
         <input
           className="border rounded px-3 py-2 md:col-span-2"
-          placeholder="Search destinations..."
+          placeholder="Tìm kiếm điểm đến..."
           value={q}
           onChange={(e) => setFilter({ q: e.target.value })}
         />
@@ -84,7 +93,7 @@ export default function Destinations() {
           value={categoryId}
           onChange={(e) => setFilter({ categoryId: e.target.value })}
         >
-          <option value="">All categories</option>
+          <option value="">Tất cả danh mục</option>
           {cats.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
         </select>
         <select
@@ -92,16 +101,16 @@ export default function Destinations() {
           value={sort}
           onChange={(e) => setFilter({ sort: e.target.value })}
         >
-          <option value="featured_first">Featured first</option>
-          <option value="created_desc">Newest</option>
-          <option value="created_asc">Oldest</option>
-          <option value="name_asc">Name A-Z</option>
-          <option value="name_desc">Name Z-A</option>
+          <option value="featured_first">Nổi bật trước</option>
+          <option value="created_desc">Mới nhất</option>
+          <option value="created_asc">Cũ nhất</option>
+          <option value="name_asc">Tên A-Z</option>
+          <option value="name_desc">Tên Z-A</option>
         </select>
 
         <div className="md:col-span-4 grid md:grid-cols-4 gap-3">
           <div className="border rounded p-2">
-            <div className="text-xs text-gray-500 mb-1">Multi-category</div>
+            <div className="text-xs text-gray-500 mb-1">Chọn nhiều danh mục</div>
             <div className="flex flex-wrap gap-2">
               {cats.map((c) => {
                 const active = categoryIds.includes(String(c.id));
@@ -119,7 +128,7 @@ export default function Destinations() {
             </div>
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Min price</label>
+            <label className="block text-xs text-gray-500 mb-1">Giá tối thiểu</label>
             <input
               className="border rounded px-3 py-2 w-full"
               value={minPrice}
@@ -128,13 +137,22 @@ export default function Destinations() {
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Max price</label>
+            <label className="block text-xs text-gray-500 mb-1">Giá tối đa</label>
             <input
               className="border rounded px-3 py-2 w-full"
               value={maxPrice}
               onChange={(e) => setFilter({ maxPrice: e.target.value })}
               placeholder="20000000"
             />
+          </div>
+          <div className="border rounded p-2">
+            <div className="text-xs text-gray-500 mb-1">Khoảng giá nhanh</div>
+            <div className="flex flex-wrap gap-2">
+              <button className="px-2 py-1 rounded text-sm border" onClick={() => setPreset(0, 5000000)} type="button">0–5 triệu</button>
+              <button className="px-2 py-1 rounded text-sm border" onClick={() => setPreset(5000000, 10000000)} type="button">5–10 triệu</button>
+              <button className="px-2 py-1 rounded text-sm border" onClick={() => setPreset(10000000, undefined)} type="button">Trên 10 triệu</button>
+              <button className="px-2 py-1 rounded text-sm border" onClick={() => setPreset(undefined, undefined)} type="button">Xóa</button>
+            </div>
           </div>
         </div>
       </div>
@@ -148,7 +166,7 @@ export default function Destinations() {
       )}
 
       {!loading && data && data.items.length === 0 && (
-        <div className="text-sm text-gray-500">No destinations found.</div>
+        <div className="text-sm text-gray-500">Không tìm thấy điểm đến.</div>
       )}
 
       {!loading && data && data.items.length > 0 && (

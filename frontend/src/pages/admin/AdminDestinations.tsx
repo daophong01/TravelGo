@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import Table from '../../components/Table';
 import Skeleton from '../../components/Skeleton';
-import { bulkDeleteDestinations, createDestination, deleteDestination, getDestinationsPaged, updateDestination } from '../../services/destination';
+import { bulkDeleteDestinations, createDestination, deleteDestination, getDestinationsPaged, updateDestination, uploadDestinationImages } from '../../services/destination';
 import toast from 'react-hot-toast';
 import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -147,6 +147,16 @@ export default function AdminDestinations() {
     }
   }
 
+  async function onUploadImages(id: number, files: FileList | null) {
+    if (!files || files.length === 0) return;
+    try {
+      await uploadDestinationImages(id, Array.from(files));
+      toast.success('Uploaded images');
+    } catch {
+      toast.error('Upload failed');
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -231,12 +241,12 @@ export default function AdminDestinations() {
 
       {!isLoading && data && data.items.length > 0 && (
         <>
-          <Table headers={['', 'ID', 'Name', 'Slug', 'Price', 'Featured', 'Actions']}>
+          <Table headers={['', 'ID', 'Name', 'Slug', 'Price', 'Category', 'Featured', 'Images', 'Actions']}>
             <tr className="border-t">
               <td className="px-3 py-2">
                 <input type="checkbox" checked={selectAll} onChange={toggleSelectAllOnPage} />
               </td>
-              <td className="px-3 py-2" colSpan={6}>
+              <td className="px-3 py-2" colSpan={8}>
                 <span className="text-xs text-gray-500">Select all on page</span>
               </td>
             </tr>
@@ -260,11 +270,24 @@ export default function AdminDestinations() {
                   <InlineEdit value={String(d.price ?? 0)} onSave={(v) => onUpdate(d.id, { price: Number(v) || 0 } as any)} />
                 </td>
                 <td className="px-3 py-2">
+                  <select
+                    className="border rounded px-2 py-1 text-sm"
+                    value={String(d.categoryId || '')}
+                    onChange={(e) => onUpdate(d.id, { categoryId: e.target.value ? Number(e.target.value) : null } as any)}
+                  >
+                    <option value="">None</option>
+                    {cats.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
+                  </select>
+                </td>
+                <td className="px-3 py-2">
                   <input
                     type="checkbox"
                     checked={!!d.featured}
                     onChange={(e) => onUpdate(d.id, { featured: e.target.checked })}
                   />
+                </td>
+                <td className="px-3 py-2">
+                  <input type="file" multiple onChange={(e) => onUploadImages(d.id, e.target.files)} />
                 </td>
                 <td className="px-3 py-2">
                   <button className="text-red-600 text-sm" onClick={() => onDelete(d.id)}>Delete</button>
