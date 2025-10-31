@@ -7,13 +7,13 @@ export default function PublicLayout() {
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="font-semibold text-xl">TravelGo</Link>
           <nav className="flex gap-4 text-sm">
-            <Link to="/destinations">Destinations</Link>
-            <Link to="/categories">Categories</Link>
-            <Link to="/deals">Deals</Link>
-            <Link to="/stories">Stories</Link>
-            <Link to="/about">About</Link>
-            <Link to="/contact">Contact</Link>
-            <Link to="/signin" className="px-3 py-1 rounded bg-sky-500 text-white">Sign In</Link>
+            <Link to="/destinations">Điểm đến</Link>
+            <Link to="/categories">Danh mục</Link>
+            <Link to="/deals">Ưu đãi</Link>
+            <Link to="/stories">Câu chuyện</Link>
+            <Link to="/about">Giới thiệu</Link>
+            <Link to="/contact">Liên hệ</Link>
+            <Link to="/signin" className="px-3 py-1 rounded bg-sky-500 text-white">Đăng nhập</Link>
           </nav>
         </div>
       </header>
@@ -22,7 +22,7 @@ export default function PublicLayout() {
       </main>
       <footer className="border-t">
         <div className="max-w-6xl mx-auto px-4 py-6 text-sm text-gray-500">
-          © {new Date().getFullYear()} TravelGo
+          © {new Date().getFullYear()} TravelGo · Tất cả các quyền được bảo lưu
         </div>
       </footer>
     </div>

@@ -56,6 +56,12 @@ function csvResponse(res, filename, content) {
   res.send(content);
 }
 
+async function logAudit(entity, entityId, action, actorId, detail) {
+  await prisma.auditLog.create({
+    data: { entity, entityId, action, actorId: actorId || null, detail },
+  });
+}
+
 // Bookings: list with filters and CSV export
 function buildBookingWhere(from, to, status) {
   const where = {};
@@ -108,7 +114,22 @@ router.post('/bookings/bulk-status', async (req, res) => {
   const status = req.body?.status?.toString();
   if (!ids.length || !status) return res.status(400).json({ message: 'Missing ids or status' });
   const result = await prisma.booking.updateMany({ where: { id: { in: ids } }, data: { status } });
+  await logAudit('Booking', 0, 'BULK_STATUS', null, JSON.stringify({ ids, status }));
   res.json({ updated: result.count });
+});
+
+// Single update/delete Booking
+router.put('/bookings/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const updated = await prisma.booking.update({ where: { id }, data: req.body || {} });
+  await logAudit('Booking', id, 'UPDATE', null, JSON.stringify(req.body || {}));
+  res.json(updated);
+});
+router.delete('/bookings/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  await prisma.booking.delete({ where: { id } });
+  await logAudit('Booking', id, 'DELETE', null, '');
+  res.status(204).send();
 });
 
 // Reviews: list with filters and CSV export (date range)
@@ -212,7 +233,22 @@ router.post('/payments/bulk-status', async (req, res) => {
   const status = req.body?.status?.toString();
   if (!ids.length || !status) return res.status(400).json({ message: 'Missing ids or status' });
   const result = await prisma.payment.updateMany({ where: { id: { in: ids } }, data: { status } });
+  await logAudit('Payment', 0, 'BULK_STATUS', null, JSON.stringify({ ids, status }));
   res.json({ updated: result.count });
+});
+
+// Single update/delete Payment
+router.put('/payments/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const updated = await prisma.payment.update({ where: { id }, data: req.body || {} });
+  await logAudit('Payment', id, 'UPDATE', null, JSON.stringify(req.body || {}));
+  res.json(updated);
+});
+router.delete('/payments/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  await prisma.payment.delete({ where: { id } });
+  await logAudit('Payment', id, 'DELETE', null, '');
+  res.status(204).send();
 });
 
 // Destinations export CSV (admin) with filters

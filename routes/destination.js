@@ -2,7 +2,24 @@
 const express = require('express');
 const prisma = require('../lib/prisma');
 const { authRequired, isAdmin } = require('../middleware/auth');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 const router = express.Router();
+
+// uploads for destination images
+const uploadDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname || '') || '.jpg';
+    cb(null, `dest_${Date.now()}${ext}`);
+  },
+});
+const upload = multer({ storage });
 
 // GET /api/destination
 // Supports pagination, multi-category filter, price range, search, featured filter and sort
@@ -76,12 +93,39 @@ router.get('/:slug', async (req, res) => {
   res.json(dest);
 });
 
+// Images
+// GET /api/destination/:id/images
+router.get('/:id/images', async (req, res) => {
+  const id = Number(req.params.id);
+  const images = await prisma.destinationImage.findMany({ where: { destinationId: id }, orderBy: { createdAt: 'desc' } });
+  res.json(images);
+});
+
+// POST /api/destination/:id/images
+router.post('/:id/images', authRequired, isAdmin, upload.array('files', 10), async (req, res) => {
+  const id = Number(req.params.id);
+  if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+    return res.status(400).json({ message: 'No files uploaded' });
+  }
+  const created = await prisma.$transaction(
+    req.files.map((f) => prisma.destinationImage.create({ data: { destinationId: id, url: `/uploads/${f.filename}` } }))
+  );
+  res.status(201).json(created);
+});
+
+// DELETE /api/destination/images/:imageId
+router.delete('/images/:imageId', authRequired, isAdmin, async (req, res) => {
+  const imageId = Number(req.params.imageId);
+  await prisma.destinationImage.delete({ where: { id: imageId } });
+  res.status(204).send();
+});
+
 // Admin CRUD
 router.post('/', authRequired, isAdmin, async (req, res) => {
-  const { name, slug, description, featured = false, categoryId = null, price = 0 } = req.body || {};
+  const { name, slug, description, featured = false, categoryId = null, price = 0, lat = 0, lng = 0 } = req.body || {};
   if (!name || !slug) return res.status(400).json({ message: 'Missing fields' });
   const created = await prisma.destination.create({
-    data: { name, slug, description, featured, categoryId, price },
+    data: { name, slug, description, featured, categoryId, price, lat, lng },
   });
   res.status(201).json(created);
 });

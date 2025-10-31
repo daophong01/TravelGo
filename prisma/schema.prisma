@@ -28,12 +28,24 @@ model Destination {
   slug         String     @unique
   description  String?
   featured     Boolean    @default(false)
+  price        Int?       @default(0)
+  lat          Float?     @default(0)
+  lng          Float?     @default(0)
   category     Category?  @relation(fields: [categoryId], references: [id])
   categoryId   Int?
+  images       DestinationImage[]
   reviews      Review[]
   bookings     Booking[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+}
+
+model DestinationImage {
+  id            Int          @id @default(autoincrement())
+  url           String
+  destination   Destination  @relation(fields: [destinationId], references: [id])
+  destinationId Int
+  createdAt     DateTime     @default(now())
 }
 
 model Booking {
@@ -112,6 +124,16 @@ model SupportTicket {
   subject   String
   message   String
   status    String   @default("open")
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  entity    String
+  entityId  Int
+  action    String
+  actorId   Int?
+  detail    String?
   createdAt DateTime @default(now())
 }
 
