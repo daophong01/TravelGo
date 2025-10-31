@@ -25,6 +25,7 @@ async function run() {
       slug: 'bali',
       description: 'Island of the Gods',
       featured: true,
+      price: 15000000,
       categoryId: beach.id,
     },
   });
@@ -36,6 +37,7 @@ async function run() {
       slug: 'phu-quoc',
       description: 'Pearl Island of Vietnam',
       featured: true,
+      price: 8000000,
       categoryId: beach.id,
     },
   });
@@ -47,6 +49,7 @@ async function run() {
       slug: 'sapa',
       description: 'Mountainous town with terraced fields',
       featured: false,
+      price: 6000000,
       categoryId: adventure.id,
     },
   });
@@ -61,7 +64,9 @@ async function run() {
       email: 'admin@travelgo.dev',
       passwordHash: hash,
       name: 'Admin',
+      avatarUrl: null,
       role: 'ADMIN',
+      settings: { locale: 'vi-VN' },
     },
   });
 

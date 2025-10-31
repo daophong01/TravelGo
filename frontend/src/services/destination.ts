@@ -7,6 +7,7 @@ export type Destination = {
   slug: string;
   description?: string;
   featured?: boolean;
+  price?: number | null;
   categoryId?: number | null;
 };
 
@@ -32,13 +33,27 @@ export async function createDestination(data: {
   description?: string;
   featured?: boolean;
   categoryId?: number | null;
+  price?: number | null;
 }) {
   const res = await api.post('/destination', data);
   return res.data as Destination;
 }
 
-export async function getDestinationsPaged(page: number, pageSize: number) {
-  const res = await api.get('/destination', { params: { page, pageSize } });
+export async function getDestinationsPaged(
+  page: number,
+  pageSize: number,
+  options?: {
+    q?: string;
+    categoryId?: string;
+    categoryIds?: number[];
+    minPrice?: number;
+    maxPrice?: number;
+    sort?: string;
+  }
+) {
+  const res = await api.get('/destination', {
+    params: { page, pageSize, ...(options || {}) },
+  });
   return res.data as { items: Destination[]; total: number; page: number; pageSize: number };
 }
 
@@ -49,4 +64,8 @@ export async function updateDestination(id: number, data: Partial<Destination>) 
 
 export async function deleteDestination(id: number) {
   await api.delete(`/destination/${id}`);
+}
+
+export async function bulkDeleteDestinations(ids: number[]) {
+  await api.post('/destination/bulk-delete', { ids });
 }

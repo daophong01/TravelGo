@@ -11,7 +11,7 @@ router.get('/:id', async (req, res) => {
   const id = Number(req.params.id);
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, email: true, name: true, role: true, createdAt: true },
+    select: { id: true, email: true, name: true, role: true, createdAt: true, avatarUrl: true, settings: true },
   });
   if (!user) return res.status(404).json({ message: 'User not found' });
   res.json(user);
@@ -20,23 +20,33 @@ router.get('/:id', async (req, res) => {
 // PUT /api/user/:id
 router.put('/:id', authRequired, async (req, res) => {
   const id = Number(req.params.id);
-  const { name, email } = req.body || {};
+  const { name, email, avatarUrl, settings } = req.body || {};
   const updated = await prisma.user.update({
     where: { id },
-    data: { ...(name ? { name } : {}), ...(email ? { email } : {}) },
-    select: { id: true, email: true, name: true, role: true },
+    data: {
+      ...(name ? { name } : {}),
+      ...(email ? { email } : {}),
+      ...(avatarUrl !== undefined ? { avatarUrl } : {}),
+      ...(settings !== undefined ? { settings } : {}),
+    },
+    select: { id: true, email: true, name: true, role: true, avatarUrl: true, settings: true },
   });
   res.json(updated);
 });
 
-// PUT /api/user/:id/settings (alias to profile updates for now)
+// PUT /api/user/:id/settings
 router.put('/:id/settings', authRequired, async (req, res) => {
   const id = Number(req.params.id);
-  const { name } = req.body || {};
+  const { name, email, avatarUrl, settings } = req.body || {};
   const updated = await prisma.user.update({
     where: { id },
-    data: { ...(name ? { name } : {}) },
-    select: { id: true, email: true, name: true, role: true },
+    data: {
+      ...(name ? { name } : {}),
+      ...(email ? { email } : {}),
+      ...(avatarUrl !== undefined ? { avatarUrl } : {}),
+      ...(settings !== undefined ? { settings } : {}),
+    },
+    select: { id: true, email: true, name: true, role: true, avatarUrl: true, settings: true },
   });
   res.json({ message: 'Settings updated', user: updated });
 });

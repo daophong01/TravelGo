@@ -5,25 +5,34 @@ const { authRequired, isAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // GET /api/destination
-// Supports pagination, category filter, search and sort
-// ?page=1&pageSize=10&categoryId=1&q=beach&sort=name_asc|name_desc|created_desc|created_asc
+// Supports pagination, multi-category filter, price range, search and sort
+// ?page=1&pageSize=10&categoryId=1&categoryIds=1,2&q=beach&minPrice=0&maxPrice=10000000&sort=name_asc|name_desc|created_desc|created_asc|featured_first
 router.get('/', async (req, res) => {
   const page = Number(req.query.page || 0);
   const pageSize = Number(req.query.pageSize || 0);
   const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+  const categoryIds = req.query.categoryIds
+    ? req.query.categoryIds.toString().split(',').map((v) => Number(v)).filter(Boolean)
+    : undefined;
+  const minPrice = req.query.minPrice ? Number(req.query.minPrice) : undefined;
+  const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : undefined;
   const q = (req.query.q || '').toString().trim();
   const sort = (req.query.sort || 'created_desc').toString();
 
   const where = {
     ...(categoryId ? { categoryId } : {}),
+    ...(categoryIds && categoryIds.length ? { categoryId: { in: categoryIds } } : {}),
+    ...(typeof minPrice === 'number' ? { price: { gte: minPrice } } : {}),
+    ...(typeof maxPrice === 'number' ? { price: { lte: maxPrice } } : {}),
     ...(q ? { OR: [{ name: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] } : {}),
   };
 
-  const orderBy =
-    sort === 'name_asc' ? { name: 'asc' } :
-    sort === 'name_desc' ? { name: 'desc' } :
-    sort === 'created_asc' ? { createdAt: 'asc' } :
-    { createdAt: 'desc' };
+  let orderBy;
+  if (sort === 'name_asc') orderBy = { name: 'asc' };
+  else if (sort === 'name_desc') orderBy = { name: 'desc' };
+  else if (sort === 'created_asc') orderBy = { createdAt: 'asc' };
+  else if (sort === 'featured_first') orderBy = [{ featured: 'desc' }, { createdAt: 'desc' }];
+  else orderBy = { createdAt: 'desc' };
 
   if (page > 0 && pageSize > 0) {
     const total = await prisma.destination.count({ where });
@@ -65,10 +74,10 @@ router.get('/:slug', async (req, res) => {
 
 // Admin CRUD
 router.post('/', authRequired, isAdmin, async (req, res) => {
-  const { name, slug, description, featured = false, categoryId = null } = req.body || {};
+  const { name, slug, description, featured = false, categoryId = null, price = 0 } = req.body || {};
   if (!name || !slug) return res.status(400).json({ message: 'Missing fields' });
   const created = await prisma.destination.create({
-    data: { name, slug, description, featured, categoryId },
+    data: { name, slug, description, featured, categoryId, price },
   });
   res.status(201).json(created);
 });
@@ -83,6 +92,14 @@ router.delete('/:id', authRequired, isAdmin, async (req, res) => {
   const id = Number(req.params.id);
   await prisma.destination.delete({ where: { id } });
   res.status(204).send();
+});
+
+// Bulk delete
+router.post('/bulk-delete', authRequired, isAdmin, async (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids.map((v) => Number(v)).filter(Boolean) : [];
+  if (!ids.length) return res.status(400).json({ message: 'No ids provided' });
+  await prisma.destination.deleteMany({ where: { id: { in: ids } } });
+  res.json({ deleted: ids.length });
 });
 
 module.exports = router;
