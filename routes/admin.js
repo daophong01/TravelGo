@@ -23,7 +23,7 @@ router.get('/summary', async (req, res) => {
   });
 });
 
-// Users
+// GET/DELETE /api/admin/users
 router.get('/users', async (req, res) => {
   const users = await prisma.user.findMany({
     select: { id: true, email: true, name: true, role: true, createdAt: true },
@@ -32,73 +32,59 @@ router.get('/users', async (req, res) => {
   res.json(users);
 });
 
-router.put('/users/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  const { name, role, email } = req.body || {};
-  const updated = await prisma.user.update({
-    where: { id },
-    data: { ...(name ? { name } : {}), ...(role ? { role } : {}), ...(email ? { email } : {}) },
-    select: { id: true, email: true, name: true, role: true },
-  });
-  res.json(updated);
-});
-
-router.post('/users/bulk-delete', async (req, res) => {
-  const ids = (req.body?.ids || []).map(Number).filter(Boolean);
-  if (!ids.length) return res.status(400).json({ message: 'No ids provided' });
-  await prisma.user.deleteMany({ where: { id: { in: ids } } });
-  res.json({ deleted: ids.length });
-});
-
 router.delete('/users/:id', async (req, res) => {
   const id = Number(req.params.id);
   await prisma.user.delete({ where: { id } });
   res.status(204).send();
 });
 
-// Bookings
+// Helpers for paging/sorting
+function parsePagingSort(req, map = {}) {
+  const page = Number(req.query.page || 1);
+  const pageSize = Number(req.query.pageSize || 10);
+  const sortBy = (req.query.sortBy || 'createdAt').toString();
+  const order = (req.query.order || 'desc').toString().toLowerCase() === 'asc' ? 'asc' : 'desc';
+  const orderBy = map[sortBy] || { [sortBy]: order };
+  return { page, pageSize, orderBy };
+}
+
+// GET /api/admin/bookings?page=&pageSize=&sortBy=createdAt|status&order=asc|desc
 router.get('/bookings', async (req, res) => {
+  const { page, pageSize, orderBy } = parsePagingSort(req, { createdAt: { createdAt: 'desc' } });
+  const total = await prisma.booking.count();
   const items = await prisma.booking.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { user: true, destination: true },
+    orderBy,
+    include: { user: true, destination: true, payment: true },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
   });
-  res.json(items);
+  res.json({ items, total, page, pageSize });
 });
 
-router.delete('/bookings/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  await prisma.booking.delete({ where: { id } });
-  res.status(204).send();
-});
-
-// Reviews
+// GET /api/admin/reviews?page=&pageSize=&sortBy=createdAt|rating&order=asc|desc
 router.get('/reviews', async (req, res) => {
+  const { page, pageSize, orderBy } = parsePagingSort(req);
+  const total = await prisma.review.count();
   const items = await prisma.review.findMany({
-    orderBy: { createdAt: 'desc' },
+    orderBy,
     include: { user: true, destination: true },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
   });
-  res.json(items);
+  res.json({ items, total, page, pageSize });
 });
 
-router.delete('/reviews/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  await prisma.review.delete({ where: { id } });
-  res.status(204).send();
-});
-
-// Payments
+// GET /api/admin/payments?page=&pageSize=&sortBy=createdAt|amount|status&order=asc|desc
 router.get('/payments', async (req, res) => {
+  const { page, pageSize, orderBy } = parsePagingSort(req);
+  const total = await prisma.payment.count();
   const items = await prisma.payment.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { booking: true },
+    orderBy,
+    include: { booking: { include: { user: true, destination: true } } },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
   });
-  res.json(items);
-});
-
-router.delete('/payments/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  await prisma.payment.delete({ where: { id } });
-  res.status(204).send();
+  res.json({ items, total, page, pageSize });
 });
 
 // Admin settings stub
