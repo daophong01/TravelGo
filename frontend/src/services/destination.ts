@@ -36,3 +36,17 @@ export async function createDestination(data: {
   const res = await api.post('/destination', data);
   return res.data as Destination;
 }
+
+export async function getDestinationsPaged(page: number, pageSize: number) {
+  const res = await api.get('/destination', { params: { page, pageSize } });
+  return res.data as { items: Destination[]; total: number; page: number; pageSize: number };
+}
+
+export async function updateDestination(id: number, data: Partial<Destination>) {
+  const res = await api.put(`/destination/${id}`, data);
+  return res.data as Destination;
+}
+
+export async function deleteDestination(id: number) {
+  await api.delete(`/destination/${id}`);
+}

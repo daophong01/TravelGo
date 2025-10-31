@@ -1,18 +1,26 @@
 // routes/review.js
 const express = require('express');
+const prisma = require('../lib/prisma');
 const router = express.Router();
 
 // GET /api/review/:destinationId
-router.get('/:destinationId', (req, res) => {
-  res.json([
-    { id: 1, destinationId: req.params.destinationId, rating: 5, comment: 'Tuyệt vời!' },
-    { id: 2, destinationId: req.params.destinationId, rating: 4, comment: 'Rất tốt' },
-  ]);
+router.get('/:destinationId', async (req, res) => {
+  const destinationId = Number(req.params.destinationId);
+  const items = await prisma.review.findMany({
+    where: { destinationId },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json(items);
 });
 
 // GET /api/review/user/:id
-router.get('/user/:id', (req, res) => {
-  res.json([{ id: 1, userId: req.params.id, rating: 5, comment: 'Great trip!' }]);
+router.get('/user/:id', async (req, res) => {
+  const userId = Number(req.params.id);
+  const items = await prisma.review.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json(items);
 });
 
 module.exports = router;

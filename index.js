@@ -27,6 +27,8 @@ const notificationRoutes = require('./routes/notification');
 const adminRoutes = require('./routes/admin');
 const supportRoutes = require('./routes/support');
 const categoryRoutes = require('./routes/category');
+const wishlistRoutes = require('./routes/wishlist');
+const loyaltyRoutes = require('./routes/loyalty');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
@@ -39,6 +41,8 @@ app.use('/api/notification', notificationRoutes);
 app.use('/api/admin', authRequired, isAdmin, adminRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/category', categoryRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/loyalty', loyaltyRoutes);
 
 // 404 handler
 app.use((req, res) => {

@@ -5,7 +5,22 @@ const { authRequired, isAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // GET /api/destination
+// Supports optional pagination with ?page=1&pageSize=10
 router.get('/', async (req, res) => {
+  const page = Number(req.query.page || 0);
+  const pageSize = Number(req.query.pageSize || 0);
+
+  if (page > 0 && pageSize > 0) {
+    const total = await prisma.destination.count();
+    const items = await prisma.destination.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { category: true },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+    return res.json({ items, total, page, pageSize });
+  }
+
   const items = await prisma.destination.findMany({
     orderBy: { createdAt: 'desc' },
     include: { category: true },
