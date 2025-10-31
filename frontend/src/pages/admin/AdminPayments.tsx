@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Skeleton from '../../components/Skeleton';
 import Table from '../../components/Table';
-import { exportPaymentsCSV, getAdminPaymentsPaged } from '../../services/admin';
+import { bulkUpdatePaymentStatus, exportPaymentsCSV, getAdminPaymentsPaged } from '../../services/admin';
 import toast from 'react-hot-toast';
 
 function formatCurrency(n: number) {
@@ -17,8 +17,10 @@ export default function AdminPayments() {
   const [status, setStatus] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [selected, setSelected] = useState<number[]>([]);
+  const [bulkStatus, setBulkStatus] = useState<'PENDING' | 'SUCCESS' | 'FAILED' | ''>('');
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin', 'payments', page, sortBy, order, status, from, to],
     queryFn: () => getAdminPaymentsPaged({ page, pageSize, sortBy, order, status: status || undefined, from: from || undefined, to: to || undefined }),
     keepPreviousData: true,
@@ -26,6 +28,8 @@ export default function AdminPayments() {
 
   const total = data?.total || 0;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const pageIds = useMemo(() => (data?.items || []).map((p: any) => p.id), [data?.items]);
+  const allSelected = pageIds.length > 0 && pageIds.every((id: number) => selected.includes(id));
 
   async function onExport() {
     try {
@@ -41,11 +45,41 @@ export default function AdminPayments() {
     }
   }
 
+  function toggleSelect(id: number) {
+    setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  }
+  function toggleSelectAll() {
+    setSelected((prev) => allSelected ? prev.filter((id) => !pageIds.includes(id)) : Array.from(new Set([...prev, ...pageIds])));
+  }
+  async function onApplyBulkStatus() {
+    if (!bulkStatus || selected.length === 0) {
+      toast.error('Select items and a status');
+      return;
+    }
+    try {
+      await bulkUpdatePaymentStatus(selected, bulkStatus);
+      toast.success('Updated status');
+      setSelected([]);
+      await refetch();
+    } catch {
+      toast.error('Bulk update failed');
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Payments</h2>
-        <button onClick={onExport} className="px-3 py-2 rounded border">Export CSV</button>
+        <div className="flex items-center gap-2">
+          <select className="border rounded px-3 py-2" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value as any)}>
+            <option value="">Bulk status...</option>
+            <option value="PENDING">Pending</option>
+            <option value="SUCCESS">Success</option>
+            <option value="FAILED">Failed</option>
+          </select>
+          <button onClick={onApplyBulkStatus} className="px-3 py-2 rounded border" disabled={!selected.length || !bulkStatus}>Apply</button>
+          <button onClick={onExport} className="px-3 py-2 rounded border">Export CSV</button>
+        </div>
       </div>
 
       <div className="flex gap-2 items-center">
@@ -76,9 +110,14 @@ export default function AdminPayments() {
 
       {!isLoading && data && (
         <>
-          <Table headers={['ID', 'User', 'Destination', 'Amount', 'Status', 'Provider', 'Created']}>
+          <Table headers={['', 'ID', 'User', 'Destination', 'Amount', 'Status', 'Provider', 'Created']}>
+            <tr className="border-t">
+              <td className="px-3 py-2"><input type="checkbox" checked={allSelected} onChange={toggleSelectAll} /></td>
+              <td className="px-3 py-2" colSpan={7}><span className="text-xs text-gray-500">Select all on page</span></td>
+            </tr>
             {data.items.map((p: any) => (
               <tr key={p.id} className="border-t">
+                <td className="px-3 py-2"><input type="checkbox" checked={selected.includes(p.id)} onChange={() => toggleSelect(p.id)} /></td>
                 <td className="px-3 py-2">{p.id}</td>
                 <td className="px-3 py-2">{p.booking?.user?.email}</td>
                 <td className="px-3 py-2">{p.booking?.destination?.name}</td>

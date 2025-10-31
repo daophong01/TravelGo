@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { exportDestinationsCSV } from '../../services/admin';
 
 const schema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -86,6 +87,20 @@ export default function AdminDestinations() {
     }
   }
 
+  async function onExport() {
+    try {
+      const blob = await exportDestinationsCSV({});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'destinations.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Export failed');
+    }
+  }
+
   function toggleSelect(id: number) {
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
@@ -109,13 +124,16 @@ export default function AdminDestinations() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Destinations</h2>
-        <button
-          onClick={onBulkDelete}
-          className="px-3 py-2 rounded bg-red-600 text-white disabled:opacity-50"
-          disabled={!selected.length}
-        >
-          Delete selected ({selected.length})
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={onExport} className="px-3 py-2 rounded border">Export CSV</button>
+          <button
+            onClick={onBulkDelete}
+            className="px-3 py-2 rounded bg-red-600 text-white disabled:opacity-50"
+            disabled={!selected.length}
+          >
+            Delete selected ({selected.length})
+          </button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit(onCreate)} className="grid md:grid-cols-4 gap-3 items-end">

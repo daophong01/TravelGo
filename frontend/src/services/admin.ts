@@ -45,3 +45,18 @@ export async function exportPaymentsCSV(params: { status?: string; from?: string
   const res = await api.get('/admin/payments/export', { params, responseType: 'blob' });
   return res.data as Blob;
 }
+
+export async function exportDestinationsCSV(params: { q?: string; categoryId?: number; minPrice?: number; maxPrice?: number; featured?: boolean }) {
+  const res = await api.get('/admin/destinations/export', { params, responseType: 'blob' });
+  return res.data as Blob;
+}
+
+export async function bulkUpdateBookingStatus(ids: number[], status: 'PENDING' | 'CONFIRMED' | 'CANCELED') {
+  const res = await api.post('/admin/bookings/bulk-status', { ids, status });
+  return res.data as { updated: number };
+}
+
+export async function bulkUpdatePaymentStatus(ids: number[], status: 'PENDING' | 'SUCCESS' | 'FAILED') {
+  const res = await api.post('/admin/payments/bulk-status', { ids, status });
+  return res.data as { updated: number };
+}
