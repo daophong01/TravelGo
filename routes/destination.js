@@ -5,15 +5,31 @@ const { authRequired, isAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // GET /api/destination
-// Supports optional pagination with ?page=1&pageSize=10
+// Supports pagination, category filter, search and sort
+// ?page=1&pageSize=10&categoryId=1&q=beach&sort=name_asc|name_desc|created_desc|created_asc
 router.get('/', async (req, res) => {
   const page = Number(req.query.page || 0);
   const pageSize = Number(req.query.pageSize || 0);
+  const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+  const q = (req.query.q || '').toString().trim();
+  const sort = (req.query.sort || 'created_desc').toString();
+
+  const where = {
+    ...(categoryId ? { categoryId } : {}),
+    ...(q ? { OR: [{ name: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] } : {}),
+  };
+
+  const orderBy =
+    sort === 'name_asc' ? { name: 'asc' } :
+    sort === 'name_desc' ? { name: 'desc' } :
+    sort === 'created_asc' ? { createdAt: 'asc' } :
+    { createdAt: 'desc' };
 
   if (page > 0 && pageSize > 0) {
-    const total = await prisma.destination.count();
+    const total = await prisma.destination.count({ where });
     const items = await prisma.destination.findMany({
-      orderBy: { createdAt: 'desc' },
+      where,
+      orderBy,
       include: { category: true },
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -22,7 +38,8 @@ router.get('/', async (req, res) => {
   }
 
   const items = await prisma.destination.findMany({
-    orderBy: { createdAt: 'desc' },
+    where,
+    orderBy,
     include: { category: true },
   });
   res.json(items);
