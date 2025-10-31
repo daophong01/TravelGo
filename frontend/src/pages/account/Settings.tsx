@@ -3,9 +3,9 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 import { getCurrentUser } from '../../lib/auth';
-import { updateSettings } from '../../services/settings';
+import { updateSettings, uploadAvatar } from '../../services/settings';
 import { useUser } from '../../hooks/useUser';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 const schema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -19,6 +19,7 @@ export default function Settings() {
   const me = getCurrentUser();
   const { data } = useUser(me?.id);
   const [preview, setPreview] = useState<string>('');
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   const defaultValues = useMemo<FormData>(() => ({
     name: data?.name || '',
@@ -26,7 +27,7 @@ export default function Settings() {
     avatarUrl: (data as any)?.avatarUrl || '',
   }), [data]);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting }, reset, watch } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset, watch, setValue } = useForm<FormData>({
     resolver: zodResolver(schema),
     values: defaultValues,
   });
@@ -47,6 +48,20 @@ export default function Settings() {
     }
   }
 
+  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!me) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const { url } = await uploadAvatar(me.id, file);
+      setValue('avatarUrl', url, { shouldValidate: true });
+      toast.success('Avatar uploaded');
+      if (fileRef.current) fileRef.current.value = '';
+    } catch (e) {
+      toast.error('Upload failed');
+    }
+  }
+
   return (
     <div className="max-w-md">
       <h2 className="text-xl font-semibold mb-3">Settings</h2>
@@ -62,15 +77,13 @@ export default function Settings() {
           {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email.message}</p>}
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Avatar URL</label>
-          <input className="border rounded px-3 py-2 w-full" placeholder="https://..." {...register('avatarUrl')} />
+          <label className="block text-xs text-gray-500 mb-1">Avatar</label>
+          <div className="flex items-center gap-3">
+            <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} />
+            {preview ? <img src={preview} alt="avatar" className="w-10 h-10 rounded-full object-cover border" /> : null}
+          </div>
+          <input className="border rounded px-3 py-2 w-full mt-2" placeholder="https://..." {...register('avatarUrl')} />
           {errors.avatarUrl && <p className="text-xs text-red-600 mt-1">{errors.avatarUrl.message}</p>}
-          {preview ? (
-            <div className="mt-2 flex items-center gap-3">
-              <img src={preview} alt="avatar preview" className="w-12 h-12 rounded-full object-cover border" />
-              <span className="text-xs text-gray-500">Preview</span>
-            </div>
-          ) : null}
         </div>
         <button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded bg-sky-500 text-white disabled:opacity-50">
           {isSubmitting ? 'Saving...' : 'Save'}
