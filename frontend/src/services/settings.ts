@@ -1,7 +1,7 @@
 // src/services/settings.ts
 import api from '../lib/api';
 
-export async function updateSettings(id: number, data: { name?: string }) {
+export async function updateSettings(id: number, data: { name?: string; email?: string; avatarUrl?: string; settings?: Record<string, any> }) {
   const res = await api.put(`/user/${id}/settings`, data);
   return res.data;
 }

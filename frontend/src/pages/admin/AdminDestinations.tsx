@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import Table from '../../components/Table';
 import Skeleton from '../../components/Skeleton';
-import { createDestination, deleteDestination, getDestinationsPaged, updateDestination } from '../../services/destination';
+import { bulkDeleteDestinations, createDestination, deleteDestination, getDestinationsPaged, updateDestination } from '../../services/destination';
 import toast from 'react-hot-toast';
 import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -20,6 +20,8 @@ type FormData = z.infer<typeof schema>;
 export default function AdminDestinations() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
+  const [selected, setSelected] = useState<number[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin', 'destinations', page, pageSize],
@@ -67,9 +69,54 @@ export default function AdminDestinations() {
     }
   }
 
+  async function onBulkDelete() {
+    if (!selected.length) {
+      toast.error('No items selected');
+      return;
+    }
+    if (!confirm(`Delete ${selected.length} selected destinations?`)) return;
+    try {
+      await bulkDeleteDestinations(selected);
+      toast.success('Deleted selected');
+      setSelected([]);
+      setSelectAll(false);
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Bulk delete failed');
+    }
+  }
+
+  function toggleSelect(id: number) {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
+  function toggleSelectAllOnPage() {
+    if (!data) return;
+    const pageIds = data.items.map((d: any) => d.id);
+    if (selectAll) {
+      // unselect all page ids
+      setSelected((prev) => prev.filter((id) => !pageIds.includes(id)));
+      setSelectAll(false);
+    } else {
+      setSelected((prev) => Array.from(new Set([...prev, ...pageIds])));
+      setSelectAll(true);
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Destinations</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Destinations</h2>
+        <button
+          onClick={onBulkDelete}
+          className="px-3 py-2 rounded bg-red-600 text-white disabled:opacity-50"
+          disabled={!selected.length}
+        >
+          Delete selected ({selected.length})
+        </button>
+      </div>
 
       <form onSubmit={handleSubmit(onCreate)} className="grid md:grid-cols-4 gap-3 items-end">
         <div>
@@ -111,9 +158,24 @@ export default function AdminDestinations() {
 
       {!isLoading && data && data.items.length > 0 && (
         <>
-          <Table headers={['ID', 'Name', 'Slug', 'Featured', 'Actions']}>
+          <Table headers={['', 'ID', 'Name', 'Slug', 'Featured', 'Actions']}>
+            <tr className="border-t">
+              <td className="px-3 py-2">
+                <input type="checkbox" checked={selectAll} onChange={toggleSelectAllOnPage} />
+              </td>
+              <td className="px-3 py-2" colSpan={5}>
+                <span className="text-xs text-gray-500">Select all on page</span>
+              </td>
+            </tr>
             {data.items.map((d) => (
               <tr key={d.id} className="border-t">
+                <td className="px-3 py-2">
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(d.id)}
+                    onChange={() => toggleSelect(d.id)}
+                  />
+                </td>
                 <td className="px-3 py-2">{d.id}</td>
                 <td className="px-3 py-2">
                   <InlineEdit value={d.name} onSave={(v) => onUpdate(d.id, { name: v })} />
