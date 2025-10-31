@@ -5,6 +5,10 @@ import PublicLayout from './layouts/PublicLayout';
 import AccountLayout from './layouts/AccountLayout';
 import AdminLayout from './layouts/AdminLayout';
 
+// Guards
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
+
 // Public pages
 import Home from './pages/Home';
 import Destinations from './pages/Destinations';
@@ -54,7 +58,6 @@ import AdminPayments from './pages/admin/AdminPayments';
 import AdminSettings from './pages/admin/AdminSettings';
 
 export default function App() {
-  // Note: Auth protection and role guards should wrap the below where appropriate.
   return (
     <Routes>
       {/* Public */}
@@ -79,20 +82,22 @@ export default function App() {
       <Route path="/auth/success" element={<AuthSuccess />} />
       <Route path="/auth/error" element={<AuthError />} />
 
-      {/* Account */}
-      <Route path="/account" element={<AccountLayout />}>
-        <Route index element={<Navigate to="profile" replace />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="bookings" element={<Bookings />} />
-        <Route path="payments" element={<Payments />} />
-        <Route path="wishlist" element={<Wishlist />} />
-        <Route path="reviews" element={<Reviews />} />
-        <Route path="notifications" element={<Notifications />} />
-        <Route path="loyalty" element={<Loyalty />} />
-        <Route path="support" element={<Support />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="password" element={<ChangePassword />} />
-        <Route path="security" element={<Security />} />
+      {/* Account (protected) */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/account" element={<AccountLayout />}>
+          <Route index element={<Navigate to="profile" replace />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="bookings" element={<Bookings />} />
+          <Route path="payments" element={<Payments />} />
+          <Route path="wishlist" element={<Wishlist />} />
+          <Route path="reviews" element={<Reviews />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="loyalty" element={<Loyalty />} />
+          <Route path="support" element={<Support />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="password" element={<ChangePassword />} />
+          <Route path="security" element={<Security />} />
+        </Route>
       </Route>
 
       {/* Checkout */}
@@ -101,16 +106,18 @@ export default function App() {
       <Route path="/checkout/success" element={<CheckoutSuccess />} />
       <Route path="/checkout/fail" element={<CheckoutFail />} />
 
-      {/* Admin */}
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="users" element={<AdminUsers />} />
-        <Route path="destinations" element={<AdminDestinations />} />
-        <Route path="bookings" element={<AdminBookings />} />
-        <Route path="reviews" element={<AdminReviews />} />
-        <Route path="payments" element={<AdminPayments />} />
-        <Route path="settings" element={<AdminSettings />} />
+      {/* Admin (protected + role) */}
+      <Route element={<AdminRoute />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="destinations" element={<AdminDestinations />} />
+          <Route path="bookings" element={<AdminBookings />} />
+          <Route path="reviews" element={<AdminReviews />} />
+          <Route path="payments" element={<AdminPayments />} />
+          <Route path="settings" element={<AdminSettings />} />
+        </Route>
       </Route>
 
       {/* Fallback */}

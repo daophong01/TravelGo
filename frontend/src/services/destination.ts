@@ -7,6 +7,7 @@ export type Destination = {
   slug: string;
   description?: string;
   featured?: boolean;
+  categoryId?: number | null;
 };
 
 export async function getDestinations() {
@@ -21,5 +22,17 @@ export async function getFeaturedDestinations() {
 
 export async function getDestinationBySlug(slug: string) {
   const res = await api.get(`/destination/${slug}`);
+  return res.data as Destination;
+}
+
+// Admin
+export async function createDestination(data: {
+  name: string;
+  slug: string;
+  description?: string;
+  featured?: boolean;
+  categoryId?: number | null;
+}) {
+  const res = await api.post('/destination', data);
   return res.data as Destination;
 }
