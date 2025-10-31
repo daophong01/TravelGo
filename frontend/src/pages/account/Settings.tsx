@@ -8,9 +8,9 @@ import { useUser } from '../../hooks/useUser';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 const schema = z.object({
-  name: z.string().min(2, 'Name is required'),
-  email: z.string().email('Invalid email'),
-  avatarUrl: z.string().url('Invalid URL').optional().or(z.literal('')),
+  name: z.string().min(2, 'Vui lòng nhập họ tên'),
+  email: z.string().email('Email không hợp lệ'),
+  avatarUrl: z.string().url('URL không hợp lệ').optional().or(z.literal('')),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -41,10 +41,10 @@ export default function Settings() {
     if (!me) return;
     try {
       await updateSettings(me.id, { name: values.name, email: values.email, avatarUrl: values.avatarUrl || undefined });
-      toast.success('Settings saved');
+      toast.success('Đã lưu cài đặt');
       reset(values);
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Failed to save settings');
+      toast.error(e?.response?.data?.message || 'Lưu cài đặt thất bại');
     }
   }
 
@@ -55,19 +55,19 @@ export default function Settings() {
     try {
       const { url } = await uploadAvatar(me.id, file);
       setValue('avatarUrl', url, { shouldValidate: true });
-      toast.success('Avatar uploaded');
+      toast.success('Đã tải ảnh đại diện');
       if (fileRef.current) fileRef.current.value = '';
     } catch (e) {
-      toast.error('Upload failed');
+      toast.error('Tải ảnh thất bại');
     }
   }
 
   return (
     <div className="max-w-md">
-      <h2 className="text-xl font-semibold mb-3">Settings</h2>
+      <h2 className="text-xl font-semibold mb-3">Cài đặt</h2>
       <form className="grid gap-3" onSubmit={handleSubmit(onSubmit)}>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Full name</label>
+          <label className="block text-xs text-gray-500 mb-1">Họ và tên</label>
           <input className="border rounded px-3 py-2 w-full" {...register('name')} />
           {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name.message}</p>}
         </div>
@@ -77,7 +77,7 @@ export default function Settings() {
           {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email.message}</p>}
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Avatar</label>
+          <label className="block text-xs text-gray-500 mb-1">Ảnh đại diện</label>
           <div className="flex items-center gap-3">
             <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} />
             {preview ? <img src={preview} alt="avatar" className="w-10 h-10 rounded-full object-cover border" /> : null}
@@ -86,7 +86,7 @@ export default function Settings() {
           {errors.avatarUrl && <p className="text-xs text-red-600 mt-1">{errors.avatarUrl.message}</p>}
         </div>
         <button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded bg-sky-500 text-white disabled:opacity-50">
-          {isSubmitting ? 'Saving...' : 'Save'}
+          {isSubmitting ? 'Đang lưu...' : 'Lưu'}
         </button>
       </form>
     </div>

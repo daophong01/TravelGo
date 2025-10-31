@@ -6,9 +6,9 @@ import { useRegister } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 const schema = z.object({
-  name: z.string().min(2, 'Please enter your full name'),
-  email: z.string().email('Invalid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  name: z.string().min(2, 'Vui lòng nhập họ tên'),
+  email: z.string().email('Email không hợp lệ'),
+  password: z.string().min(6, 'Mật khẩu tối thiểu 6 ký tự'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -23,19 +23,19 @@ export default function SignUp() {
   async function onSubmit(values: FormData) {
     try {
       await registerMutation.mutateAsync(values);
-      toast.success('Account created');
+      toast.success('Tạo tài khoản thành công');
       navigate('/account/profile');
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Failed to create account');
+      toast.error(e?.response?.data?.message || 'Tạo tài khoản thất bại');
     }
   }
 
   return (
     <div className="max-w-sm mx-auto px-4 py-10">
-      <h1 className="text-2xl font-semibold mb-4">Sign Up</h1>
+      <h1 className="text-2xl font-semibold mb-4">Đăng ký</h1>
       <form className="grid gap-3" onSubmit={handleSubmit(onSubmit)}>
         <div>
-          <input className="border rounded px-3 py-2 w-full" placeholder="Full name" {...reg('name')} />
+          <input className="border rounded px-3 py-2 w-full" placeholder="Họ và tên" {...reg('name')} />
           {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name.message}</p>}
         </div>
         <div>
@@ -43,7 +43,7 @@ export default function SignUp() {
           {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email.message}</p>}
         </div>
         <div>
-          <input className="border rounded px-3 py-2 w-full" placeholder="Password" type="password" {...reg('password')} />
+          <input className="border rounded px-3 py-2 w-full" placeholder="Mật khẩu" type="password" {...reg('password')} />
           {errors.password && <p className="text-xs text-red-600 mt-1">{errors.password.message}</p>}
         </div>
         <button
@@ -51,7 +51,7 @@ export default function SignUp() {
           disabled={isSubmitting || registerMutation.isPending}
           className="px-4 py-2 rounded bg-sky-500 text-white disabled:opacity-50"
         >
-          {isSubmitting || registerMutation.isPending ? 'Creating...' : 'Create account'}
+          {isSubmitting || registerMutation.isPending ? 'Đang tạo...' : 'Tạo tài khoản'}
         </button>
       </form>
     </div>

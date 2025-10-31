@@ -18,7 +18,7 @@ export default function Payments() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Payments</h2>
+      <h2 className="text-xl font-semibold">Thanh toán</h2>
 
       {isLoading && (
         <div className="space-y-2">
@@ -27,11 +27,11 @@ export default function Payments() {
       )}
 
       {!isLoading && (!data || data.length === 0) && (
-        <div className="text-sm text-gray-500">No payments found.</div>
+        <div className="text-sm text-gray-500">Chưa có giao dịch nào.</div>
       )}
 
       {!isLoading && data && data.length > 0 && (
-        <Table headers={['ID', 'Amount', 'Status', 'Provider']}>
+        <Table headers={['Mã', 'Số tiền', 'Trạng thái', 'Nhà cung cấp']}>
           {data.map((p) => (
             <tr key={p.id} className="border-t">
               <td className="px-3 py-2">{p.id}</td>

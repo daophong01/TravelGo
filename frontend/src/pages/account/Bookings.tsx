@@ -14,7 +14,7 @@ export default function Bookings() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Bookings</h2>
+      <h2 className="text-xl font-semibold">Đơn đặt</h2>
 
       {isLoading && (
         <div className="space-y-2">
@@ -23,11 +23,11 @@ export default function Bookings() {
       )}
 
       {!isLoading && (!data || data.length === 0) && (
-        <div className="text-sm text-gray-500">You have no bookings yet.</div>
+        <div className="text-sm text-gray-500">Bạn chưa có đơn đặt nào.</div>
       )}
 
       {!isLoading && data && data.length > 0 && (
-        <Table headers={['ID', 'Destination', 'Status']}>
+        <Table headers={['Mã', 'Điểm đến', 'Trạng thái']}>
           {data.map((b) => (
             <tr key={b.id} className="border-t">
               <td className="px-3 py-2">{b.id}</td>
